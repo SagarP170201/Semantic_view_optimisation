@@ -1,55 +1,39 @@
--- =============================================================================
 -- Semantic View Optimisation - Customer Access Setup
--- =============================================================================
--- Share this script with the customer's Snowflake admin.
--- Replace all <placeholders> before running.
+-- -------------------------------------------------------
+-- Fill in the placeholders below and send to the customer's Snowflake admin.
 --
--- Variables to fill in:
---   <your_role>      : the role you will connect with (e.g. SAGAR_PAWAR_ROLE)
---   <db>             : database containing the semantic view
---   <schema>         : schema containing the semantic view
---   <semantic_view>  : name of the semantic view to optimise
---   <warehouse>      : warehouse to use for query execution
--- =============================================================================
+--   <your_role>     : the role you'll connect with
+--   <db>            : database containing the semantic view
+--   <schema>        : schema containing the semantic view
+--   <semantic_view> : name of the semantic view
+--   <warehouse>     : warehouse to use
 
 
--- =============================================================================
 -- TIER 1: Always required
--- Needed to: download the semantic view YAML, run VQR validation SQL
--- =============================================================================
+-- Gives you access to download the semantic view and run validation queries.
 
-GRANT USAGE ON DATABASE <db>                             TO ROLE <your_role>;
-GRANT USAGE ON SCHEMA <db>.<schema>                      TO ROLE <your_role>;
+GRANT USAGE ON DATABASE <db>                               TO ROLE <your_role>;
+GRANT USAGE ON SCHEMA <db>.<schema>                        TO ROLE <your_role>;
 GRANT USAGE ON SEMANTIC VIEW <db>.<schema>.<semantic_view> TO ROLE <your_role>;
-GRANT SELECT ON ALL TABLES IN SCHEMA <db>.<schema>       TO ROLE <your_role>;
-GRANT USAGE ON WAREHOUSE <warehouse>                     TO ROLE <your_role>;
+GRANT SELECT ON ALL TABLES IN SCHEMA <db>.<schema>         TO ROLE <your_role>;
+GRANT USAGE ON WAREHOUSE <warehouse>                       TO ROLE <your_role>;
 
 
--- =============================================================================
--- TIER 2: Write-back (optional)
--- Needed to: push the optimised semantic view back into the customer account
--- Skip if you will hand the updated YAML back to the customer to deploy.
--- =============================================================================
+-- TIER 2: Uncomment if you want to push the optimised view back directly.
+-- Skip this if you'll hand the updated file back to them to deploy themselves.
 
 -- GRANT CREATE SEMANTIC VIEW ON SCHEMA <db>.<schema> TO ROLE <your_role>;
 
 
--- =============================================================================
--- TIER 3: Log-driven optimisation (optional but recommended)
--- Needed to: analyse real Cortex Analyst usage logs to surface failing queries
--- and prioritise which verified queries to add / fix.
--- =============================================================================
+-- TIER 3: Uncomment if you want to use real usage logs to drive the optimisation.
+-- This surfaces which questions are actually failing in production.
 
 -- GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_REQUESTS_VIEWER TO ROLE <your_role>;
 
 
--- =============================================================================
--- Smoke test — run as <your_role> to confirm access before starting
--- =============================================================================
-
+-- Smoke test — run as <your_role> once grants are in place
 USE ROLE <your_role>;
 USE WAREHOUSE <warehouse>;
 
 DESCRIBE SEMANTIC VIEW <db>.<schema>.<semantic_view>;
-SELECT * FROM <db>.<schema>.<a_table_in_the_semantic_view> LIMIT 1;
 SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('<db>.<schema>.<semantic_view>');

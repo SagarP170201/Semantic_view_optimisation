@@ -1,78 +1,55 @@
-# Semantic View Optimisation — Customer Setup
+# Semantic View Optimisation
 
-Use this repo to prepare a customer environment before running the **Semantic View Optimisation** skill in Cortex Code.
-
----
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `customer_access_setup.sql` | SQL grants to share with the customer's Snowflake admin |
-| `connections_template.toml` | Template block to add to `~/.snowflake/connections.toml` on your laptop |
+This repo has everything needed to get access to a customer's Snowflake environment and run a semantic view optimisation session.
 
 ---
 
-## Step-by-step
+## Before you start — get these from the customer
 
-### 1. Info to get from the customer
-
-- Fully qualified semantic view name: `<db>.<schema>.<semantic_view>`
-- Warehouse name their agent uses
-- A few real user questions they care about (for VQR validation)
 - Their Snowflake account identifier
+- The fully qualified semantic view name: `db.schema.semantic_view`
+- The warehouse their agent uses
 
-### 2. Send `customer_access_setup.sql` to their admin
+---
 
-Fill in the placeholders and ask their admin to run it.
+## Step 1 — Send the customer's admin `customer_access_setup.sql`
 
-**Tier 1 (always required)** — enables YAML download + SQL validation:
-```sql
-GRANT USAGE ON DATABASE <db> TO ROLE <your_role>;
-GRANT USAGE ON SCHEMA <db>.<schema> TO ROLE <your_role>;
-GRANT USAGE ON SEMANTIC VIEW <db>.<schema>.<semantic_view> TO ROLE <your_role>;
-GRANT SELECT ON ALL TABLES IN SCHEMA <db>.<schema> TO ROLE <your_role>;
-GRANT USAGE ON WAREHOUSE <warehouse> TO ROLE <your_role>;
-```
+Fill in the placeholders (your role, their db/schema/warehouse) and ask their admin to run it. The script is tiered — Tier 1 is the only hard requirement. Uncomment Tier 2 and 3 based on what you need.
 
-**Tier 2 (optional)** — only if you will push the optimised view back directly:
-```sql
-GRANT CREATE SEMANTIC VIEW ON SCHEMA <db>.<schema> TO ROLE <your_role>;
-```
+| Tier | What it unlocks | Run it? |
+|---|---|---|
+| 1 | Download the semantic view + validate queries against their data | Always |
+| 2 | Push the optimised view back directly into their account | Only if they want you to deploy |
+| 3 | Pull real usage logs to see what's actually failing | Recommended |
 
-**Tier 3 (optional, recommended)** — enables log-driven optimisation using real usage data:
-```sql
-GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_REQUESTS_VIEWER TO ROLE <your_role>;
-```
+---
 
-> **Note:** No `CORTEX_ANALYST_USER` or `CORTEX_USER` database role is needed.
-> The skill calls Cortex Analyst via the REST API — your session token is sufficient.
+## Step 2 — Add their account to your connection config
 
-### 3. Configure your connection
+Copy the block from `connections_template.toml` into `~/.snowflake/connections.toml` and fill in their account details. Use `externalbrowser` — no passwords needed.
 
-Add the block from `connections_template.toml` to `~/.snowflake/connections.toml`, filling in the customer's account details.
+---
 
-### 4. Smoke test
+## Step 3 — Smoke test before you start
+
+Run this as your role in their account to confirm everything is wired up:
 
 ```sql
 USE ROLE <your_role>;
 USE WAREHOUSE <warehouse>;
+
 DESCRIBE SEMANTIC VIEW <db>.<schema>.<semantic_view>;
 SELECT SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW('<db>.<schema>.<semantic_view>');
 ```
 
-### 5. Run the optimisation skill in Cortex Code
-
-Open Cortex Code, set your connection to the customer connection, then say:
-
-> "Use the semantic view optimisation skill to audit and optimise `<db>.<schema>.<semantic_view>`."
+If both come back clean, you're good to go.
 
 ---
 
-## What the skill does
+## Step 4 — Run the optimisation in Cortex Code
 
-1. Downloads the semantic view YAML via `SYSTEM$READ_YAML_FROM_SEMANTIC_VIEW()`
-2. Runs all verified queries (VQRs) through Cortex Analyst and validates the generated SQL
-3. Checks best practices (descriptions, synonyms, relationships, metrics)
-4. Proposes optimisations — **nothing is applied without your approval**
-5. Optionally uploads the improved semantic view back to Snowflake
+Open Cortex Code, connect using the customer connection you just added, and say:
+
+> "Use the semantic view optimisation skill to audit and optimise `db.schema.semantic_view`."
+
+The skill downloads their semantic view, runs all their verified queries through Cortex Analyst, checks for gaps in descriptions/relationships/metrics, and proposes fixes. Nothing gets changed without your sign-off.
