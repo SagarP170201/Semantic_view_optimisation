@@ -10,7 +10,7 @@
 
 
 -- TIER 1: Always required
--- Gives you access to download the semantic view and run validation queries.
+-- Gives the Snowflake SE access to download the semantic view and run validation queries.
 
 GRANT USAGE ON DATABASE <db>                               TO ROLE <your_role>;
 GRANT USAGE ON SCHEMA <db>.<schema>                        TO ROLE <your_role>;
@@ -20,13 +20,13 @@ GRANT USAGE ON WAREHOUSE <warehouse>                       TO ROLE <your_role>;
 
 
 -- TIER 2: Uncomment if you want to push the optimised view back directly.
--- Skip this if you'll hand the updated file back to them to deploy themselves.
+-- Skip this if the SE will hand the updated file back for you to deploy yourself.
 
 -- GRANT CREATE SEMANTIC VIEW ON SCHEMA <db>.<schema> TO ROLE <your_role>;
 
 
 -- TIER 3: Uncomment if you want to use real usage logs to drive the optimisation.
--- This surfaces which questions are actually failing in production.
+-- This surfaces which questions are actually failing in production and helps prioritise fixes.
 
 -- GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_REQUESTS_VIEWER TO ROLE <your_role>;
 
