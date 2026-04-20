@@ -1,0 +1,11 @@
+# ~/.snowflake/connections.toml — add this block for the customer account
+#
+# Replace all <placeholders> before saving.
+# authenticator = "externalbrowser" opens a browser SSO login — no password needed.
+
+[<customer_short_name>]
+account       = "<customer-account-id>"          # e.g. myorg-prod
+user          = "<your_snowflake_username>"
+authenticator = "externalbrowser"
+role          = "<your_role>"
+warehouse     = "<warehouse>"
