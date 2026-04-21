@@ -1,38 +1,63 @@
 -- Semantic View Optimisation - Customer Access Setup
 -- -------------------------------------------------------
--- Fill in the placeholders below and send to the customer's Snowflake admin.
+-- Fill in the placeholders below and have your Snowflake admin run this script.
 --
---   <your_role>     : the role you'll connect with
+--   <se_username>   : username to create for the Snowflake SE (e.g. se_sagar)
+--   <temp_password> : temporary password — SE will change on first login
+--   <se_role>       : role name to create for the SE (e.g. snowflake_se_role)
 --   <db>            : database containing the semantic view
 --   <schema>        : schema containing the semantic view
 --   <semantic_view> : name of the semantic view
 --   <warehouse>     : warehouse to use
 
 
--- TIER 1: Always required
--- Gives the Snowflake SE access to download the semantic view and run validation queries.
+-- ================================================================
+-- STEP 1: Create a dedicated user and role for the Snowflake SE
+-- ================================================================
 
-GRANT USAGE ON DATABASE <db>                               TO ROLE <your_role>;
-GRANT USAGE ON SCHEMA <db>.<schema>                        TO ROLE <your_role>;
-GRANT USAGE ON SEMANTIC VIEW <db>.<schema>.<semantic_view> TO ROLE <your_role>;
-GRANT SELECT ON ALL TABLES IN SCHEMA <db>.<schema>         TO ROLE <your_role>;
-GRANT USAGE ON WAREHOUSE <warehouse>                       TO ROLE <your_role>;
+CREATE ROLE IF NOT EXISTS <se_role>;
 
+CREATE USER IF NOT EXISTS <se_username>
+    PASSWORD           = '<temp_password>'
+    DEFAULT_ROLE       = <se_role>
+    MUST_CHANGE_PASSWORD = TRUE;
 
--- TIER 2: Uncomment if you want to push the optimised view back directly.
--- Skip this if the SE will hand the updated file back for you to deploy yourself.
-
--- GRANT CREATE SEMANTIC VIEW ON SCHEMA <db>.<schema> TO ROLE <your_role>;
+GRANT ROLE <se_role> TO USER <se_username>;
 
 
--- TIER 3: Uncomment if you want to use real usage logs to drive the optimisation.
--- This surfaces which questions are actually failing in production and helps prioritise fixes.
+-- ================================================================
+-- STEP 2: Grant access — always required
+-- Gives the SE access to read the semantic view and run validation queries.
+-- ================================================================
 
--- GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_REQUESTS_VIEWER TO ROLE <your_role>;
+GRANT USAGE ON DATABASE <db>                               TO ROLE <se_role>;
+GRANT USAGE ON SCHEMA <db>.<schema>                        TO ROLE <se_role>;
+GRANT USAGE ON SEMANTIC VIEW <db>.<schema>.<semantic_view> TO ROLE <se_role>;
+GRANT SELECT ON ALL TABLES IN SCHEMA <db>.<schema>         TO ROLE <se_role>;
+GRANT USAGE ON WAREHOUSE <warehouse>                       TO ROLE <se_role>;
 
 
--- Smoke test — run as <your_role> once grants are in place
-USE ROLE <your_role>;
+-- ================================================================
+-- STEP 3 (optional): Allow the SE to push the optimised view back directly.
+-- Skip this if you prefer to receive the updated file and deploy it yourself.
+-- ================================================================
+
+-- GRANT CREATE SEMANTIC VIEW ON SCHEMA <db>.<schema> TO ROLE <se_role>;
+
+
+-- ================================================================
+-- STEP 4 (optional): Allow the SE to use real usage logs to prioritise fixes.
+-- This surfaces which questions are failing in production.
+-- ================================================================
+
+-- GRANT DATABASE ROLE SNOWFLAKE.CORTEX_ANALYST_REQUESTS_VIEWER TO ROLE <se_role>;
+
+
+-- ================================================================
+-- Smoke test — run as <se_role> once all grants are in place
+-- ================================================================
+
+USE ROLE <se_role>;
 USE WAREHOUSE <warehouse>;
 
 DESCRIBE SEMANTIC VIEW <db>.<schema>.<semantic_view>;
