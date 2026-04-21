@@ -32,7 +32,7 @@ GRANT ROLE <se_role> TO USER <se_username>;
 
 GRANT USAGE ON DATABASE <db>                               TO ROLE <se_role>;
 GRANT USAGE ON SCHEMA <db>.<schema>                        TO ROLE <se_role>;
-GRANT USAGE ON SEMANTIC VIEW <db>.<schema>.<semantic_view> TO ROLE <se_role>;
+GRANT SELECT ON SEMANTIC VIEW <db>.<schema>.<semantic_view> TO ROLE <se_role>;
 GRANT SELECT ON ALL TABLES IN SCHEMA <db>.<schema>         TO ROLE <se_role>;
 GRANT USAGE ON WAREHOUSE <warehouse>                       TO ROLE <se_role>;
 
